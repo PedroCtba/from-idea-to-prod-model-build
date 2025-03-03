@@ -1,0 +1,31 @@
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - pip install --upgrade --force-reinstall . "awscli>1.20.30"
+      - pip install --upgrade mlflow sagemaker-mlflow s3fs xgboost
+    
+  build:
+    commands:
+      - export SAGEMAKER_USER_CONFIG_OVERRIDE="./config.yaml"
+      - export PYTHONUNBUFFERED=TRUE
+      - export SAGEMAKER_PROJECT_NAME_ID="${SAGEMAKER_PROJECT_NAME}-${SAGEMAKER_PROJECT_ID}"
+      - |
+        run-pipeline --module-name pipelines.fromideatoprod.pipeline \
+          --role-arn $SAGEMAKER_PIPELINE_ROLE_ARN \
+          --tags "[{\"Key\":\"sagemaker:project-name\",\"Value\":\"${SAGEMAKER_PROJECT_NAME}\"}, {\"Key\":\"sagemaker:project-id\", \"Value\":\"${SAGEMAKER_PROJECT_ID}\"}]" \
+          --kwargs "{ \
+                \"feature_group_name\":\"from-idea-to-prod-26-22-18-25\", \
+                \"model_package_group_name\":\"from-idea-to-prod-ci-cd-a-p-gnubnvibtglc\",\
+                \"pipeline_name_prefix\":\"from-idea-to-prod-pipeline-26-21-41-25\",\
+                \"role\":\"arn:aws:iam::235494800240:role/service-role/AmazonSageMaker-ExecutionRole-20250217T190983\",\
+                \"region\":\"${AWS_REGION}\", \
+                \"sagemaker_project_name\":\"${SAGEMAKER_PROJECT_NAME}\",\
+                \"sagemaker_project_id\":\"${SAGEMAKER_PROJECT_ID}\",\
+                \"bucket_name\":\"${ARTIFACT_BUCKET}\"\
+                    }"
+      - echo "Create/update of the SageMaker Pipeline and a pipeline execution completed."
